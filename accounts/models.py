@@ -11,8 +11,13 @@ class CustomUserManager(BaseUserManager):
         """
         Creates and saves a User with the given email, mobile and password.
         """
+
+
         if not email:
             raise ValueError('Users must have an email address')
+
+        if CustomUser.objects.get(email=email) is not None:
+            raise ValueError("This email already exists")
 
         user = self.model(
             email=self.normalize_email(email),
@@ -27,6 +32,12 @@ class CustomUserManager(BaseUserManager):
         """
         Creates and saves a superuser with the given email, mobile and password.
         """
+        if not email:
+            raise ValueError('Users must have an email address')
+
+        if CustomUser.objects.get(email=email) is not None:
+            raise ValueError("This email already exists")
+
         user = self.create_user(
             email,
             password=password,
