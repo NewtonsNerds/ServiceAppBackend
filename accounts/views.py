@@ -3,7 +3,7 @@ from rest_framework.response import Response
 
 from .models import User
 
-# Create your views here.
+# Create your views.
 
 
 @api_view(['POST'])
