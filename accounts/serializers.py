@@ -1,5 +1,5 @@
 from rest_framework import serializers
-
+from rest_framework.exceptions import ValidationError
 from .models import CustomUser
 
 
@@ -37,3 +37,11 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         return user
 
     # TODO: Define validate functions for UserRegisterSerializer
+
+    def validate(self,attrs):
+        email = attrs("email")
+        user = CustomUser.objects.get(email=email)
+        if user is not None:
+            raise ValidationError("This email is already exist")
+        else:
+            return attrs

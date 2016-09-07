@@ -21,6 +21,7 @@ from rest_framework.urlpatterns import format_suffix_patterns
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^accounts/', include('accounts.urls')),
+    url(r'^rest-auth/', include('rest_auth.urls')),
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)
