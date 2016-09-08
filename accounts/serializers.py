@@ -1,8 +1,13 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+
 from .models import CustomUser
 
+from rest_framework_jwt.serializers import JSONWebTokenSerializer
+
 from django.utils import timezone
+from django.contrib.auth import authenticate, get_user_model
+from django.utils.translation import ugettext as _
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
@@ -88,3 +93,38 @@ class UserLoginSerializer(serializers.ModelSerializer):
             attrs["mobile"] = user.mobile
             attrs["token"] = "SOME RANDOM TOKEN"
             return attrs
+
+
+from rest_framework_jwt.settings import api_settings
+jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
+jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
+
+
+class CustomJSONWebTokenSerializer(JSONWebTokenSerializer):
+    def validate(self, attrs):
+        credentials = {
+            'username': attrs.get(self.username_field),
+            'password': attrs.get('password')
+        }
+
+        if all(credentials.values()):
+            user = authenticate(**credentials)
+
+            if user:
+                if not user.is_active:
+                    msg = _('User account is disabled.')
+                    raise serializers.ValidationError(msg)
+
+                payload = jwt_payload_handler(user)
+
+                return {
+                    'token': jwt_encode_handler(payload),
+                    'user': user
+                }
+            else:
+                msg = _('Unable to login with provided credentials.')
+                raise serializers.ValidationError(msg)
+        else:
+            msg = _('Must include "{username_field}" and "password".')
+            msg = msg.format(username_field=self.username_field)
+            raise serializers.ValidationError(msg)
