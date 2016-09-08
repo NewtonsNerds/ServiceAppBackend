@@ -7,7 +7,7 @@ from django.utils import timezone
 
 # Create your models here.
 class CustomUserManager(BaseUserManager):
-    def create_user(self, email, mobile, password=None):
+    def create_user(self, email, mobile, password=None, address=None):
         """
         Creates and saves a User with the given email, mobile and password.
         """
@@ -21,6 +21,8 @@ class CustomUserManager(BaseUserManager):
                 email=self.normalize_email(email),
                 mobile=mobile,
             )
+            if address is not None:
+                user.address=address
 
             user.set_password(password)
             user.save(using=self._db)

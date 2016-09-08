@@ -4,7 +4,6 @@ from .models import CustomUser
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
-
     id = serializers.ReadOnlyField()
 
     class Meta:
@@ -14,6 +13,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
             'email',
             'mobile',
             'password',
+            'address',
         ]
 
         extra_kwargs = {
@@ -26,11 +26,16 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         email = validated_data['email']
         mobile = validated_data['mobile']
         password = validated_data['password']
+        address = validated_data['address']
 
         user = CustomUser(
             email=email,
-            mobile=mobile
+            mobile=mobile,
+
         )
+
+        if address is not None or not address:
+            user.address = address
 
         user.set_password(password)
         user.save()
