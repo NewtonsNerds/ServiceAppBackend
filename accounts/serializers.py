@@ -4,14 +4,32 @@ from rest_framework.exceptions import ValidationError
 from .models import CustomUser
 
 from rest_framework_jwt.serializers import JSONWebTokenSerializer
+from rest_framework_jwt.settings import api_settings
 
 from django.utils import timezone
-from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth import authenticate
 from django.utils.translation import ugettext as _
+
+jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
+jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
+
+
+class UserDetailSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField()
+
+    class Meta:
+        model = CustomUser
+        fields = [
+            'id',
+            'email',
+            'mobile',
+            'address',
+        ]
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
+    token = serializers.CharField(allow_blank=True, read_only=True)
 
     class Meta:
         model = CustomUser
@@ -21,6 +39,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
             'mobile',
             'password',
             'address',
+            'token',
         ]
 
         extra_kwargs = {
@@ -44,9 +63,13 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         if address is not None or not address:
             user.address = address
 
+        user.last_login = timezone.now()
         user.set_password(password)
         user.save()
-        return user
+        validated_data["id"] = user.id
+        payload = jwt_payload_handler(user)
+        validated_data["token"] = jwt_encode_handler(payload)
+        return validated_data
 
     def validate(self, attrs):
         email = attrs["email"]
@@ -68,6 +91,7 @@ class UserLoginSerializer(serializers.ModelSerializer):
             'id',
             'email',
             'mobile',
+            'address',
             'password',
             'token'
         ]
@@ -87,17 +111,14 @@ class UserLoginSerializer(serializers.ModelSerializer):
             else:
                 if not user.check_password(password):
                     raise ValidationError("Incorrect credentials. Please try again.")
+
+            payload = jwt_payload_handler(user)
+
             user.last_login = timezone.now()
             user.save(update_fields=['last_login'])
             attrs["id"] = user.id
-            attrs["mobile"] = user.mobile
-            attrs["token"] = "SOME RANDOM TOKEN"
+            attrs["token"] = jwt_encode_handler(payload)
             return attrs
-
-
-from rest_framework_jwt.settings import api_settings
-jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
-jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
 
 
 class CustomJSONWebTokenSerializer(JSONWebTokenSerializer):

@@ -49,7 +49,7 @@ class CustomUserManager(BaseUserManager):
 class CustomUser(AbstractBaseUser):
     email = models.EmailField('email address', db_index=True)
     mobile = models.CharField('mobile', max_length=10)
-    address = models.CharField('address',max_length=200)
+    address = models.CharField('address', max_length=200)
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
 
