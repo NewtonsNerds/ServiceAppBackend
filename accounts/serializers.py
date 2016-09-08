@@ -30,6 +30,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
 class UserRegisterSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
     token = serializers.CharField(allow_blank=True, read_only=True)
+    address = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = CustomUser
@@ -52,7 +53,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         email = validated_data['email']
         mobile = validated_data['mobile']
         password = validated_data['password']
-        address = validated_data['address']
+        address = validated_data.get("address", None)
 
         user = CustomUser(
             email=email,
@@ -60,8 +61,10 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
         )
 
-        if address is not None or not address:
+        if address is not None:
             user.address = address
+        else:
+            user.address = ""
 
         user.last_login = timezone.now()
         user.set_password(password)
@@ -84,6 +87,8 @@ class UserLoginSerializer(serializers.ModelSerializer):
 
     id = serializers.IntegerField(required=False, read_only=True)
     token = serializers.CharField(allow_blank=True, read_only=True)
+    address = serializers.CharField(required=False, read_only=True)
+    mobile = serializers.CharField(required=False, read_only=True)
 
     class Meta:
         model = CustomUser
@@ -102,23 +107,67 @@ class UserLoginSerializer(serializers.ModelSerializer):
             }
         }
 
-        def validate(self, attrs):
-            email = attrs['email']
-            password = attrs['password']
-            user = CustomUser.objects.get(email=email)
-            if user is None:
-                raise ValidationError("This email is not valid.")
-            else:
-                if not user.check_password(password):
-                    raise ValidationError("Incorrect credentials. Please try again.")
+    def validate(self, attrs):
+        email = attrs['email']
+        password = attrs['password']
+        user = CustomUser.objects.get(email=email)
+        if user is None:
+            raise ValidationError("This email is not valid.")
+        else:
+            if not user.check_password(password):
+                raise ValidationError("Incorrect credentials. Please try again.")
 
-            payload = jwt_payload_handler(user)
+        payload = jwt_payload_handler(user)
 
-            user.last_login = timezone.now()
-            user.save(update_fields=['last_login'])
-            attrs["id"] = user.id
-            attrs["token"] = jwt_encode_handler(payload)
-            return attrs
+        user.last_login = timezone.now()
+        user.save(update_fields=['last_login'])
+        attrs["id"] = user.id
+        attrs["token"] = jwt_encode_handler(payload)
+        return attrs
+
+
+class ResetPasswordSerializer(serializers.ModelSerializer):
+
+    new_password = serializers.CharField()
+
+    class Meta:
+        model = CustomUser
+        fields = [
+            'email',
+            'password',
+            'new_password',
+        ]
+
+        extra_kwargs = {
+            "password": {
+                "write_only": True
+            },
+            "new_password": {
+                "write_only": True
+            },
+        }
+
+    def validate_new_password(self, value):
+        data = self.get_initial()
+        old_pass = data.get("password")
+        if value == old_pass:
+            raise ValidationError("The new password cannot be the same as existing password.")
+        return value
+
+    def validate_password(self, value):
+        data = self.get_initial()
+        user = CustomUser.objects.get(email=data.get('email'))
+        if not user.check_password(value):
+            raise ValidationError("Please enter a valid current password.")
+        return value
+
+    def create(self, validated_data):
+        return CustomUser.objects.get(email=validated_data.get('email'))
+
+    def update(self, instance, validated_data):
+        instance.set_password(validated_data.get('new_password'))
+        instance.save()
+        return validated_data
 
 
 class CustomJSONWebTokenSerializer(JSONWebTokenSerializer):

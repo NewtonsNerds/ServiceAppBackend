@@ -2,24 +2,26 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from rest_framework_jwt.views import JSONWebTokenAPIView
 
-from .serializers import UserRegisterSerializer, UserDetailSerializer, CustomJSONWebTokenSerializer
+from .serializers import UserRegisterSerializer, \
+    UserDetailSerializer, \
+    CustomJSONWebTokenSerializer, \
+    ResetPasswordSerializer
+
 from .models import CustomUser
+from .permissions import IsOwnerOrReadOnly
 
 
 # Create your views here
 
 
 @api_view(['POST'])
-@permission_classes((AllowAny, ))
+@permission_classes((AllowAny,))
 def register(request):
-    if request.method == 'GET':
-        return Response()
-
-    elif request.method == 'POST':
+    if request.method == 'POST':
         serializer = UserRegisterSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -38,6 +40,19 @@ def detail(request, pk):
     if request.method == 'GET':
         serializer = UserDetailSerializer(user)
         return Response(serializer.data)
+
+
+@api_view(['PUT'])
+@permission_classes((IsAuthenticated, ))
+def reset_password(request):
+    if request.method == 'PUT':
+        data = request.data
+        data['email'] = request.user.email
+        serializer = ResetPasswordSerializer(request.user, data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Password successfully updated"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class GetJSONWebToken(JSONWebTokenAPIView):
