@@ -1,6 +1,7 @@
-
 ServiceAppBackend/settings.py
 myenv
 .DS_Store
 .idea
 __pycache__
+.idea
+*.pyc
