@@ -108,12 +108,16 @@ class UserLoginSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         email = attrs['email']
         password = attrs['password']
-        user = CustomUser.objects.get(email=email)
-        if user is None:
+
+        try:
+            user = CustomUser.objects.get(email=email)
+        except CustomUser.DoesNotExist:
             raise ValidationError("This email is not valid.")
-        else:
-            if not user.check_password(password):
-                raise ValidationError("Incorrect credentials. Please try again.")
+
+        if not user.check_password(password):
+            raise ValidationError("Incorrect credentials. Please try again.")
+
+
 
         payload = jwt_payload_handler(user)
 

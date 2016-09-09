@@ -24,6 +24,24 @@ class UserTestCase(APITestCase):
             ]
         })
 
+    def test_InvalidLoginUser(self):
+        data = {"email": "ronak@newtonsit.com.au", "password": "test12341"}
+        response = self.client.post('/accounts/login/', data, format='json')
+        self.assertEqual(response.data, {
+            "non_field_errors": [
+                "Incorrect credentials. Please try again."
+            ]
+        })
+
+    def test_BlankInvalidLoginUser(self):
+        data = {"email": "", "password": "test12341"}
+        response = self.client.post('/accounts/login/', data, format='json')
+        self.assertEqual(response.data, {
+            "email": [
+                "This field may not be blank."
+            ]
+        })
+
     def test_RegisterUser(self):
         data = {"email": "ronak_test1@newtonsit.com.au","password": "test12345","mobile": "1234567890","address": "larkin"}
         response = self.client.post('/accounts/register/', data, format='json')
