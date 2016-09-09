@@ -126,7 +126,7 @@ class UserLoginSerializer(serializers.ModelSerializer):
         return attrs
 
 
-class ResetPasswordSerializer(serializers.ModelSerializer):
+class UpdatePasswordSerializer(serializers.ModelSerializer):
 
     new_password = serializers.CharField()
 
@@ -166,6 +166,59 @@ class ResetPasswordSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         instance.set_password(validated_data.get('new_password'))
+        instance.save()
+        return validated_data
+
+
+class ForgotPasswordRequestSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = CustomUser
+        fields = [
+            'email',
+        ]
+
+    def validate_email(self, value):
+        try:
+            CustomUser.objects.get(email=value)
+        except CustomUser.DoesNotExist:
+            raise ValidationError("This email does not exist")
+        return value
+
+
+class ForgotPasswordChangeSerializer(serializers.ModelSerializer):
+
+    confirm_password = serializers.CharField()
+
+    class Meta:
+        model = CustomUser
+        fields = [
+            'email',
+            'password',
+            'confirm_password',
+        ]
+
+        extra_kwargs = {
+            "password": {
+                "write_only": True
+            },
+            "confirm+password": {
+                "write_only": True
+            },
+        }
+
+    def validate_password(self, value):
+        data = self.get_initial()
+        conf_pass = data.get("confirm_password")
+        if value != conf_pass:
+            raise ValidationError("The password do not match.")
+        return value
+
+    def create(self, validated_data):
+        return CustomUser.objects.get(email=validated_data.get('email'))
+
+    def update(self, instance, validated_data):
+        instance.set_password(validated_data.get('password'))
         instance.save()
         return validated_data
 
