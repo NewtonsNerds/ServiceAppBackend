@@ -25,6 +25,8 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.shortcuts import render
 from django.http import HttpResponse
 
+from .tasks import send_email
+
 
 # Create your views here
 
@@ -97,7 +99,8 @@ def forgot_password(request):
 
             email_template_name = 'accounts/forgot_password_email.html'
             email = loader.render_to_string(email_template_name, c)
-            send_mail("RESET YOUR PASSWORD", email, DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
+            send_email.delay("RESET YOUR PASSWORD", email, DEFAULT_FROM_EMAIL, [user.email])
+            # send_mail("RESET YOUR PASSWORD", email, DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
             return Response({"message": 'Email has been sent to your email address. '
                                         'Please check its inbox to continue resetting password.'})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -107,7 +110,6 @@ def forgot_password(request):
 @permission_classes((AllowAny, ))
 def forgot_password_confirm(request, uidb64=None, token=None):
     try:
-        # urlsafe_base64_decode() decodes to bytestring on Python 3
         uid = force_text(urlsafe_base64_decode(uidb64))
         user = CustomUser.objects.get(pk=uid)
     except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
@@ -119,8 +121,9 @@ def forgot_password_confirm(request, uidb64=None, token=None):
     elif request.method == 'POST':
         data = request.data
         data['email'] = user.email
-        serializer = ForgotPasswordChangeSerializer(data=data)
+        serializer = ForgotPasswordChangeSerializer(user, data=data)
         if serializer.is_valid():
+            serializer.save()
             return HttpResponse("Changed password")
         return Response(serializer.errors)
 
