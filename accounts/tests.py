@@ -45,7 +45,6 @@ class UserTestCase(APITestCase):
     def test_RegisterUser(self):
         data = {"email": "ronak_test1@newtonsit.com.au","password": "test12345","mobile": "1234567890","address": "larkin"}
         response = self.client.post('/accounts/register/', data, format='json')
-        print response.data
         self.assertEqual(response.data.get('email'), "ronak_test1@newtonsit.com.au")
         self.assertEqual(response.data.get('mobile'), "1234567890")
         self.assertEqual(response.data.get('address'), "larkin")
