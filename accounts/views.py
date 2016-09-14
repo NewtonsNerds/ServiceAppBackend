@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny
 
 from rest_framework_jwt.views import JSONWebTokenAPIView
 
-from .serializers import UserRegisterSerializer, UserDetailSerializer, CustomJSONWebTokenSerializer
+from .serializers import UserRegisterSerializer, UserDetailSerializer, CustomJSONWebTokenSerializer, UserLoginSerializer
 from .models import CustomUser
 
 
@@ -16,14 +16,22 @@ from .models import CustomUser
 @api_view(['POST'])
 @permission_classes((AllowAny, ))
 def register(request):
-    if request.method == 'GET':
-        return Response()
-
-    elif request.method == 'POST':
+    if request.method == 'POST':
         serializer = UserRegisterSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes((AllowAny, ))
+def login(request):
+    if request.method == 'POST':
+        serializer = UserLoginSerializer(data=request.data)
+        if serializer.is_valid():
+
+            return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
