@@ -57,3 +57,10 @@ class UserTestCase(APITestCase):
                 "This email is already exist"
             ]
         })
+
+    def test_send_forgot_password_email(self):
+        response = self.client.post('/accounts/password/forgot/',
+                                    data={"email": "ronak@newtonsit.com.au"},
+                                    HTTP_HOST='example.com')
+        self.assertEqual(response.data, {"message": 'Email has been sent to your email address. '
+                                                    'Please check its inbox to continue resetting password.'})
