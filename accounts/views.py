@@ -13,7 +13,6 @@ from .serializers import (UserRegisterSerializer,
                           ForgotPasswordChangeSerializer,
                           UserLoginSerializer)
 
-
 from .models import CustomUser
 
 from django.conf.global_settings import DEFAULT_FROM_EMAIL
@@ -43,12 +42,11 @@ def register(request):
 
 
 @api_view(['POST'])
-@permission_classes((AllowAny, ))
+@permission_classes((AllowAny,))
 def login(request):
     if request.method == 'POST':
         serializer = UserLoginSerializer(data=request.data)
         if serializer.is_valid():
-
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -67,7 +65,7 @@ def detail(request, pk):
 
 
 @api_view(['PUT'])
-@permission_classes((IsAuthenticated, ))
+@permission_classes((IsAuthenticated,))
 def update_password(request):
     if request.method == 'PUT':
         data = request.data
@@ -80,7 +78,7 @@ def update_password(request):
 
 
 @api_view(['POST'])
-@permission_classes((AllowAny, ))
+@permission_classes((AllowAny,))
 def forgot_password(request):
     if request.method == 'POST':
         serializer = ForgotPasswordRequestSerializer(data=request.data)
@@ -107,7 +105,7 @@ def forgot_password(request):
 
 
 @api_view(['GET', 'POST'])
-@permission_classes((AllowAny, ))
+@permission_classes((AllowAny,))
 def forgot_password_confirm(request, uidb64=None, token=None):
     try:
         uid = force_text(urlsafe_base64_decode(uidb64))
@@ -120,8 +118,10 @@ def forgot_password_confirm(request, uidb64=None, token=None):
 
     elif request.method == 'POST':
         data = request.data
-        data['email'] = user.email
-        serializer = ForgotPasswordChangeSerializer(user, data=data)
+        data_to_serialize = {'email': user.email, 'password': data['password'],
+                             'confirm_password': data['confirm_password']}
+
+        serializer = ForgotPasswordChangeSerializer(user, data=data_to_serialize)
         if serializer.is_valid():
             serializer.save()
             return HttpResponse("Changed password")
